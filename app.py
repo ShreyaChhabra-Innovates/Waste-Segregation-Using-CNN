@@ -103,6 +103,7 @@ def main():
     st.title('Waste Segregation Model ♻️')
     st.markdown("""
     This application is trained using CNN transfer learning model (ResNet-50), and Cross Entropy to segregate Waste images into Biodegradable and Non-Biodegradable and their subcategories.
+
     Project Aim: Safe Desposal and Waste Treatment.
                 
     Explore by uploading Waste images and see how it works!
@@ -121,8 +122,8 @@ def main():
             st.image(image.resize((300, 300)), caption='Successfully Uploaded Image', use_container_width=True)
 
             st.markdown(f"**Prediction:** This is **{predicted_main_category}** waste.")
-            st.markdown(f"**Subcategory:** The specific type is **{predicted_subcategory}**.")
-            st.markdown(f"**Accuracy:****{confidence:.2f}%** ")
+            st.markdown(f"**Subcategory:** **{predicted_subcategory}**.")
+            st.markdown(f"**Accuracy:** **{confidence:.2f}%** ")
 
 if __name__ == "__main__":
     main()
