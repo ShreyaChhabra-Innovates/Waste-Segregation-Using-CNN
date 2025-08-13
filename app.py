@@ -13,8 +13,8 @@ st.set_page_config(
 )
 
 # IMPORTANT: Replace this URL with the actual link to your trained ResNet-50 model file
-MODEL_URL = 'https://github.com/your-username/your-repo/releases/download/v2.0.0/resnet50_waste_new_model.pth'
-MODEL_PATH = 'resnet50_waste_new_model.pth'
+MODEL_URL = 'https://github.com/your-username/your-repo/releases/download/v3.0.0/resnet50_wastes_new_model.pth'
+MODEL_PATH = 'resnet50_wastes_new_model.pth'
 
 # This list must exactly match the order of class names from your training script
 all_subcategories = ['ewaste', 'food_waste', 'leaf_waste', 'metal_cans', 
