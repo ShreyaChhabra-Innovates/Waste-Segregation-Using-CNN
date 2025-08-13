@@ -13,11 +13,10 @@ st.set_page_config(
 )
 
 # IMPORTANT: Replace this URL with the actual link to your trained ResNet-50 model file
-MODEL_URL = 'https://github.com/ShreyaChhabra-Innovates/Waste-Segregation-Using-CNN/releases/download/v2.0.0/resnet50_waste_new_model.pth'
+MODEL_URL = 'https://github.com/your-username/your-repo/releases/download/v2.0.0/resnet50_waste_new_model.pth'
 MODEL_PATH = 'resnet50_waste_new_model.pth'
 
 # This list must exactly match the order of class names from your training script
-# The order is determined by ImageFolder, so an alphabetical sort is usually correct.
 all_subcategories = ['ewaste', 'food_waste', 'leaf_waste', 'metal_cans', 
                      'paper_waste', 'plastic_bags', 'plastic_bottles', 'wood_waste']
 
@@ -83,7 +82,7 @@ def load_model(model_path):
 # --- Prediction function for multi-class classification ---
 def predict_image(image, model):
     """
-    Makes a prediction on a single image for multi-class classification.
+    Makes a prediction on a single image and returns the top 3 predictions.
     """
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
@@ -98,14 +97,21 @@ def predict_image(image, model):
         output = model(img_tensor)
 
     probabilities = torch.nn.functional.softmax(output, dim=1)[0]
-    predicted_class_index = torch.argmax(probabilities).item()
+    
+    # Get the top 3 predictions
+    top_prob, top_indices = torch.topk(probabilities, 3)
 
-    predicted_subcategory = all_subcategories[predicted_class_index]
-    predicted_main_category = category_mapping.get(predicted_subcategory, "Unknown")
-
-    confidence = probabilities[predicted_class_index].item() * 100
-
-    return predicted_main_category, predicted_subcategory, confidence
+    results = []
+    for i in range(len(top_indices)):
+        subcategory = all_subcategories[top_indices[i].item()]
+        main_category = category_mapping.get(subcategory, "Unknown")
+        confidence = top_prob[i].item() * 100
+        results.append({
+            'main_category': main_category,
+            'subcategory': subcategory,
+            'confidence': confidence
+        })
+    return results
 
 def main():
     """Main function to run the Streamlit app"""
@@ -132,13 +138,15 @@ def main():
         image = Image.open(uploaded_file).convert('RGB')
         
         # Make a prediction
-        predicted_main_category, predicted_subcategory, confidence = predict_image(image, model)
+        top_predictions = predict_image(image, model)
 
         # Display results
         st.image(image, caption='Successfully Uploaded Image', use_column_width=True)
-        st.markdown(f"**Prediction:** This is **{predicted_main_category}** waste.")
-        st.markdown(f"**Subcategory:** The specific type is **{predicted_subcategory}**.")
-        st.markdown(f"**Confidence:** The model is **{confidence:.2f}%** confident in this prediction.")
+        
+        st.subheader("Top Predictions:")
+        for i, pred in enumerate(top_predictions):
+            st.markdown(f"**{i+1}. {pred['main_category'].capitalize()} ({pred['subcategory']})** with **{pred['confidence']:.2f}%** confidence.")
 
 if __name__ == "__main__":
     main()
+
