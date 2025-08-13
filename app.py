@@ -7,30 +7,18 @@ import requests
 import os
 
 st.set_page_config(
-    page_title="Waste Segregation App",
+    page_title="Binary Waste Segregation App",
     page_icon="♻️",
     layout="centered"
 )
 
-# IMPORTANT: Replace this URL with the actual link to your trained ResNet-50 model file
-MODEL_URL = 'https://github.com/your-username/your-repo/releases/download/v3.0.0/resnet50_wastes_new_model.pth'
-MODEL_PATH = 'resnet50_wastes_new_model.pth'
+# IMPORTANT: You MUST retrain your model with only two classes
+# and update this URL to the new .pth file.
+MODEL_URL = 'https://github.com/your-username/your-repo/releases/download/v1.0.0/resnet50_binary_waste_model.pth'
+MODEL_PATH = 'resnet50_binary_waste_model.pth'
 
-# This list must exactly match the order of class names from your training script
-all_subcategories = ['ewaste', 'food_waste', 'leaf_waste', 'metal_cans', 
-                     'paper_waste', 'plastic_bags', 'plastic_bottles', 'wood_waste']
-
-# Mapping from subcategory to its main category
-category_mapping = {
-    'food_waste': 'biodegradable',
-    'leaf_waste': 'biodegradable',
-    'paper_waste': 'biodegradable',
-    'wood_waste': 'biodegradable',
-    'ewaste': 'non_biodegradable',
-    'metal_cans': 'non_biodegradable',
-    'plastic_bags': 'non_biodegradable',
-    'plastic_bottles': 'non_biodegradable',
-}
+# The two new class names your model should be trained on
+main_categories = ['biodegradable', 'non_biodegradable']
 
 # --- Function to download the model from a URL ---
 @st.cache_data
@@ -54,7 +42,7 @@ def download_model(url, path):
 @st.cache_resource
 def load_model(model_path):
     """
-    Loads the trained ResNet-50 model with the correct architecture.
+    Loads the trained ResNet-50 model with a two-class architecture.
     """
     if not os.path.exists(model_path):
         st.error("Model file not found. Please check the download URL and local path.")
@@ -65,9 +53,9 @@ def load_model(model_path):
     # Load an uninitialized ResNet-50 model
     model = models.resnet50(weights=None)
 
-    # Replace the final fully connected layer to match the number of subcategories (8)
+    # Replace the final fully connected layer to match the two classes
     num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, len(all_subcategories))
+    model.fc = nn.Linear(num_ftrs, len(main_categories))
 
     try:
         model.load_state_dict(torch.load(model_path, map_location=device))
@@ -76,13 +64,13 @@ def load_model(model_path):
         return model.to(device)
     except Exception as e:
         st.error(f"Error loading the model state dictionary: {e}")
-        st.info("The model architecture might not match the saved model file. Check the final layer size.")
+        st.info("The model architecture (2 classes) might not match the saved model file. A new model trained for binary classification is required.")
         return None
 
-# --- Prediction function for multi-class classification ---
+# --- Prediction function for binary classification ---
 def predict_image(image, model):
     """
-    Makes a prediction on a single image and returns the top 3 predictions.
+    Makes a prediction on a single image for binary classification.
     """
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
@@ -97,28 +85,18 @@ def predict_image(image, model):
         output = model(img_tensor)
 
     probabilities = torch.nn.functional.softmax(output, dim=1)[0]
-    
-    # Get the top 3 predictions
-    top_prob, top_indices = torch.topk(probabilities, 3)
+    predicted_class_index = torch.argmax(probabilities).item()
 
-    results = []
-    for i in range(len(top_indices)):
-        subcategory = all_subcategories[top_indices[i].item()]
-        main_category = category_mapping.get(subcategory, "Unknown")
-        confidence = top_prob[i].item() * 100
-        results.append({
-            'main_category': main_category,
-            'subcategory': subcategory,
-            'confidence': confidence
-        })
-    return results
+    predicted_category = main_categories[predicted_class_index]
+    confidence = probabilities[predicted_class_index].item() * 100
+
+    return predicted_category, confidence
 
 def main():
     """Main function to run the Streamlit app"""
-    st.title('Waste Segregation Model ♻️')
+    st.title('Binary Waste Segregation Model ♻️')
     st.markdown("""
-    This application uses a trained **ResNet-50** model to classify waste images into specific subcategories
-    and their main type (Biodegradable or Non-Biodegradable).
+    This application uses a trained **ResNet-50** model to classify waste images as either **Biodegradable** or **Non-Biodegradable**.
     """)
 
     # Download and load the model once
@@ -138,15 +116,14 @@ def main():
         image = Image.open(uploaded_file).convert('RGB')
         
         # Make a prediction
-        top_predictions = predict_image(image, model)
+        predicted_category, confidence = predict_image(image, model)
 
         # Display results
         st.image(image, caption='Successfully Uploaded Image', use_column_width=True)
-        
-        st.subheader("Top Predictions:")
-        for i, pred in enumerate(top_predictions):
-            st.markdown(f"**{i+1}. {pred['main_category'].capitalize()} ({pred['subcategory']})** with **{pred['confidence']:.2f}%** confidence.")
+        st.markdown(f"**Prediction:** This is **{predicted_category.capitalize()}** waste.")
+        st.markdown(f"**Confidence:** The model is **{confidence:.2f}%** confident in this prediction.")
 
 if __name__ == "__main__":
     main()
+
 
