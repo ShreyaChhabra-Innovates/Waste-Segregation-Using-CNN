@@ -14,8 +14,8 @@ st.set_page_config(
 
 # IMPORTANT: You MUST retrain your model with only two classes
 # and update this URL to the new .pth file.
-MODEL_URL = 'https://github.com/your-username/your-repo/releases/download/v1.0.0/resnet50_binary_waste_model.pth'
-MODEL_PATH = 'resnet50_binary_waste_model.pth'
+MODEL_URL = 'https://github.com/ShreyaChhabra-Innovates/Waste-Segregation-Using-CNN/releases/download/v3.0.0/resnet50_wastes_new_model.pth'
+MODEL_PATH = 'resnet50_wastes_new_model.pth'
 
 # The two new class names your model should be trained on
 main_categories = ['biodegradable', 'non_biodegradable']
